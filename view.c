@@ -17,7 +17,6 @@ void ncstart() {
 	noecho();
 	cbreak();
 
-
 	if (has_colors()) {
 		start_color();
 		use_default_colors();

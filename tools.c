@@ -65,6 +65,7 @@ int reg_client(int qid, int uid) {
 int unreg_client(int qid, int uid) {
 	msgdata_t reg;
 	struct msqid_ds qstatus;
+	struct passwd *pw;
 	char *p;
 
 	if (msgrcv(qid, (void *) &reg, MSGSIZE, CTRL_ID, IPC_NOWAIT) < 0)
@@ -76,11 +77,12 @@ int unreg_client(int qid, int uid) {
 
 	if (msgctl(qid, IPC_STAT, &qstatus) == 0 &&
 		uid == qstatus.msg_perm.uid) {
+
 		// try to delegate mq to the next active user
-		if ((p = strtok(reg.data, " "))) {
-			uid = atoi(p);
-			qstatus.msg_perm.uid = (uid_t) uid;
-			qstatus.msg_perm.gid = uid;
+		if ((p = strtok(reg.data, " ")) &&
+			(pw = getpwuid(atoi(p)))) {
+			qstatus.msg_perm.uid = pw->pw_uid;
+			qstatus.msg_perm.gid = pw->pw_gid;
 			msgctl(qid, IPC_SET, &qstatus);
 		} else msgctl(qid, IPC_RMID, 0);
 	}
