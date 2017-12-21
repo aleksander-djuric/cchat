@@ -16,6 +16,7 @@ int id_add(char *dst, int dst_size, int id);
 int id_del(char *dst, int id);
 int reg_client(int qid, int pid);
 int unreg_client(int qid, int pid);
+int get_count(int qid);
 int msg_send(int qid, int uid, msgdata_t *msgp);
 
 #endif // _TOOLS_H

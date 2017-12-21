@@ -17,6 +17,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/msg.h>
+#include <locale.h>
 #include <errno.h>
 #include <pwd.h>
 #include <ncurses.h>
