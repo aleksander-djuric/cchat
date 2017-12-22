@@ -14,8 +14,8 @@
 
 void ncstart();
 void draw_statbar(WINDOW *status, const char *fmt, ...);
-void add_line(WINDOW *win, int *maxrows, int *maxcols, int count);
-void print_msg(WINDOW *win, int uid, char *msg);
+void add_line(WINDOW *win, int *maxrows, int maxcols, int count);
+void print_msg(WINDOW *win, int uid, char *text);
 void print_system(WINDOW *win, int attrs, const char *fmt, ...);
 
 #endif // _VIEW_H

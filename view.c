@@ -43,12 +43,12 @@ void draw_statbar(WINDOW *status, const char *fmt, ...) {
 	va_end(args);
 }
 
-void add_line(WINDOW *win, int *maxrows, int *maxcols, int count) {
-	wresize(win, *maxrows + count, *maxcols);
+void add_line(WINDOW *win, int *maxrows, int maxcols, int count) {
 	*maxrows += count;
+	wresize(win, *maxrows, maxcols);
 }
 
-void print_msg(WINDOW *win, int uid, char *msg) {
+void print_msg(WINDOW *win, int uid, char *text) {
 	struct passwd *pw;
 
 	if ((pw = getpwuid(uid))) {
@@ -61,7 +61,7 @@ void print_msg(WINDOW *win, int uid, char *msg) {
 		wattroff(win, COLOR_PAIR(4));
 	}
 
-	wprintw(win, "%s\n", msg);
+	wprintw(win, "%s\n", text);
 }
 
 void print_system(WINDOW *win, int attrs, const char *fmt, ...) {

@@ -12,11 +12,9 @@
 #ifndef _TOOLS_H
 #define _TOOLS_H
 
-int id_add(char *dst, int dst_size, int id);
-int id_del(char *dst, int id);
-int reg_client(int qid, int pid);
-int unreg_client(int qid, int pid);
-int get_count(int qid);
-int msg_send(int qid, int uid, msgdata_t *msgp);
+int reg_client(int uid, int *data);
+int unreg_client(int uid, int *data);
+int get_count(int *data);
+int msg_send(int qid, int uid, int *data, msgdata_t *msgp);
 
 #endif // _TOOLS_H

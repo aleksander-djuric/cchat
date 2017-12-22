@@ -11,121 +11,47 @@
 
 #include "cchat.h"
 
-int id_add(char *dst, int dst_size, int id) {
-	char *p;
-	int len;
+int reg_client(int uid, int *data) {
+	if (data[0] < 0) return -1;
+	if (data[0] == MAX_USERS) return -1;
 
-	if (!dst) return -1;
+	data[0]++, data[data[0]] = uid;
 
-	len = strlen(dst);
-	p = dst + len;
-
-	if ((len + sizeof(int)) > dst_size) return -1;
-
-	if (*dst != '\0') *p++ = ' ';
-	snprintf(p, dst_size - len, "%d", id);
-
-	return 0;
+	return data[0];
 }
 
-int id_del(char *dst, int id) {
-	char str[10];
-	char *p;
-	int len;
+int unreg_client(int uid, int *data) {
+	int *s = data + 1;
+	int *e = s + data[0];
 
-	if (!dst || *dst == '\0') return -1;
+	if (data[0] < 0) return -1;
+	if (data[0] == 0) return 0;
 
-	len = sprintf(str, "%d",  id);
-	if ((p = strstr(dst, str))) {
-		if (*(p + len) == '\0') *p = '\0';
-		else strcpy(p, p + len + 1);
+	for (; *s != uid; s++) {
+		if (s == e) return data[0];
 	}
 
-	return 0;
+	if (s + 1 != e)
+		memmove(s, s + 1, (e - s) * sizeof(int));
+	data[0]--;
+
+	return data[0];
 }
 
-int reg_client(int qid, int uid) {
-	msgdata_t reg;
+int get_count(int *data) { return data[0]; }
 
-	if (msgrcv(qid, (void *) &reg, MSGSIZE, CTRL_ID, IPC_NOWAIT) < 0) {
-		reg.id = 0;
-		reg.data[0] = '\0';
-	}
+int msg_send(int qid, int uid, int *data, msgdata_t *msgp) {
+	int *s = data + 1;
+	int *e = s + data[0];
 
-	reg.id += 1;
-	reg.type = CTRL_ID;
-	if (id_add(reg.data, MSGSIZE, uid) < 0 ||
-		msgsnd(qid, (void*) &reg, MSGSIZE, IPC_NOWAIT) < 0) {
-		return -1;
-	}
-
-	return reg.id;
-}
-
-int unreg_client(int qid, int uid) {
-	msgdata_t reg;
-	struct msqid_ds qstatus;
-	struct passwd *pw;
-	char *p;
-
-	if (msgrcv(qid, (void *) &reg, MSGSIZE, CTRL_ID, IPC_NOWAIT) < 0)
-		return 0;
-
-	if (reg.id) reg.id -= 1;
-	reg.type = CTRL_ID;
-	if (id_del(reg.data, uid) < 0) return -1;
-
-	if (msgctl(qid, IPC_STAT, &qstatus) == 0 &&
-		uid == qstatus.msg_perm.uid) {
-
-		// try to delegate mq to the next active user
-		if ((p = strtok(reg.data, " ")) &&
-			(pw = getpwuid(atoi(p)))) {
-			qstatus.msg_perm.uid = pw->pw_uid;
-			qstatus.msg_perm.gid = pw->pw_gid;
-			msgctl(qid, IPC_SET, &qstatus);
-		} else msgctl(qid, IPC_RMID, 0);
-	}
-
-	if (msgsnd(qid, (const void*) &reg, MSGSIZE, IPC_NOWAIT) < 0)
-		return -1;
-
-	return reg.id;
-}
-
-int get_count(int qid) {
-	msgdata_t reg;
-
-	if (msgrcv(qid, (void *) &reg, MSGSIZE, CTRL_ID, IPC_NOWAIT) < 0)
-		return 0;
-
-	reg.type = CTRL_ID;
-	if (msgsnd(qid, (void*) &reg, MSGSIZE, IPC_NOWAIT) < 0)
-		return 0;
-
-	return reg.id;
-}
-
-int msg_send(int qid, int uid, msgdata_t *msgp) {
-	msgdata_t reg;
-	char *p;
-
-	if (msgrcv(qid, (void *) &reg, MSGSIZE, CTRL_ID, IPC_NOWAIT) < 0)
-		return -1;
-
-	reg.type = CTRL_ID;
-	if (msgsnd(qid, (void*) &reg, MSGSIZE, IPC_NOWAIT) < 0)
-		return -1;
-
-	msgp->id = uid;
-	p = strtok(reg.data, " ");
-	while (p) {
-		msgp->type = atoi(p);
-		if (msgp->type != uid &&
-			msgsnd(qid, (void*) msgp, MSGSIZE, 0) < 0) {
-			return -1;
+	for (; s < e; s++) {
+		msgp->from = uid;
+		msgp->to = *s;
+		if (msgp->to != uid) {
+			msgp->to += 1;
+			if (msgsnd(qid, (void*) msgp, MSGSIZE, 0) < 0)
+				return -1;
 		}
-		p = strtok(NULL, " ");
 	}
 
 	return 0;

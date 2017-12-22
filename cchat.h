@@ -17,6 +17,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/msg.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <sys/sem.h>
 #include <locale.h>
 #include <errno.h>
 #include <pwd.h>
@@ -26,11 +29,18 @@
 #define MSGSIZE (MAX_MSGSIZE-sizeof(long))
 #define DATASIZE (MSGSIZE-sizeof(int))
 #define CTRL_ID 65535
+#define MAX_USERS 1023
 
 typedef struct {
-	long type;
-	int id;
+	long to;	// uid + 1
+	int from;
 	char data[DATASIZE];
 } msgdata_t;
+
+union semun {
+	int val;
+	struct semid_ds *buf;
+	ushort *array;
+} arg;
 
 #endif // _CCHAT_H
