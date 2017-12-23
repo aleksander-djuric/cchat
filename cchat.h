@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include <unistd.h>
 #include <sys/msg.h>
 #include <sys/ipc.h>
@@ -28,7 +29,6 @@
 #define MAX_MSGSIZE 4096
 #define MSGSIZE (MAX_MSGSIZE-sizeof(long))
 #define DATASIZE (MSGSIZE-sizeof(int))
-#define CTRL_ID 65535
 #define MAX_USERS 1023
 
 typedef struct {
@@ -36,11 +36,5 @@ typedef struct {
 	int from;
 	char data[DATASIZE];
 } msgdata_t;
-
-union semun {
-	int val;
-	struct semid_ds *buf;
-	ushort *array;
-} arg;
 
 #endif // _CCHAT_H

@@ -12,9 +12,14 @@
 #ifndef _TOOLS_H
 #define _TOOLS_H
 
-int reg_client(int uid, int *data);
-int unreg_client(int uid, int *data);
-int get_count(int *data);
-int msg_send(int qid, int uid, int *data, msgdata_t *msgp);
+int ipc_start(int uid, char *path);
+void ipc_finish(int uid);
+
+int reg_client(int uid);
+int unreg_client(int uid);
+int get_count();
+
+int msg_recv(int uid, msgdata_t *msg);
+int msg_send(int uid, msgdata_t *msg);
 
 #endif // _TOOLS_H
