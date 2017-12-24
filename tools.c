@@ -11,9 +11,17 @@
 
 #include "cchat.h"
 
-static struct sembuf sem[2];
 static int sid, qid, mid;
 static int *data;
+
+static struct sembuf op_lock[2] = {
+	{0, 0, 0},         // wait for zero
+	{0, 1, SEM_UNDO}   // then increment to lock it
+};
+static struct sembuf op_unlock[1] = {
+	{0, -1, SEM_UNDO}  // decrement to unlock
+	// UNDO to release the lock if processes exits
+};
 
 #ifdef _SEM_SEMUN_UNDEFINED
 union semun {
@@ -60,25 +68,15 @@ int ipc_start(int uid, char *path) {
 		return -1;
 	}
 
-	sem[0].sem_num = 0;
-	sem[1].sem_num = 0;
-	sem[0].sem_flg = SEM_UNDO;
-	sem[1].sem_flg = SEM_UNDO;
-
 	if (data[0] == MAX_USERS) {
 		printf("Couldn't register chat client: %s\n", strerror(errno));
 		return -1;
 	}
 
 	// register chat client
-	sem[0].sem_op = 0; // wait for zero
-	sem[1].sem_op = 1; // then, inc to lock it
-	semop(sid, sem, 2);
-
+	semop(sid, op_lock, 2);
 	data[0]++, data[data[0]] = uid;
-
-	sem[0].sem_op = -1; // dec to unlock
-	semop(sid, sem, 1);
+	semop(sid, op_unlock, 1);
 
 	return 0;
 }
@@ -96,16 +94,11 @@ void ipc_finish(int uid) {
 	if (data[0] > 0) {
 		for (; s < e && *s != uid; s++);
 
-		sem[0].sem_op = 0;
-		sem[1].sem_op = 1;
-		semop(sid, sem, 2);
-
+		semop(sid, op_lock, 2);
 		if (s + 1 < e)
 			memmove(s, s + 1, (e - s) * sizeof(int));
 		data[0]--;
-
-		sem[0].sem_op = -1;
-		semop(sid, sem, 1);
+		semop(sid, op_unlock, 1);
 	}
 
 	// try to delegate all open resources to the next active user
